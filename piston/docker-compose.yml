@@ -1,0 +1,22 @@
+# Self-hosted Piston code execution (cgroup v2 compatible).
+# Bring up:   docker compose -f piston/docker-compose.yml up -d
+# Install runtimes (first time only): see piston/install-runtimes.sh
+# Health:     curl http://localhost:2000/api/v2/runtimes
+# The Core API talks to http://localhost:2000 (see PISTON_URL in backend/.env).
+name: linguacall-piston
+
+services:
+  piston:
+    image: ghcr.io/engineer-man/piston
+    container_name: linguacall-piston
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "2000:2000"
+    volumes:
+      - piston-packages:/piston/packages
+    tmpfs:
+      - /tmp:exec
+
+volumes:
+  piston-packages:

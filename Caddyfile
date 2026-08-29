@@ -1,0 +1,14 @@
+# Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
+# APP_DOMAIN serves the web app; API_DOMAIN serves the API + WebSockets.
+# For local testing without TLS, set both to :80 (or use localhost).
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:8080
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+	# API + WebSocket (observe stream) both proxy to the API service.
+	reverse_proxy api:8000
+}

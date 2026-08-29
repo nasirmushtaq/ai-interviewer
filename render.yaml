@@ -1,0 +1,59 @@
+# Render.com blueprint: API (Docker) + media SFU (Docker) + managed Postgres.
+# Deploy: push to a repo, then "New > Blueprint" in Render and point at this file.
+# Set the secret env vars (Azure/OpenAI keys, JWT_SECRET) in the Render dashboard.
+services:
+  - type: web
+    name: linguacall-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: linguacall-db
+          property: connectionString
+      - key: PISTON_URL
+        value: https://emkc.org   # or your self-hosted Piston URL
+      - key: CORS_ORIGINS
+        sync: false               # e.g. https://app.yourdomain.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MEDIA_SERVICE_TOKEN
+        generateValue: true
+      # Provider keys — set in dashboard (marked secret):
+      - key: AZURE_OPENAI_ENDPOINT
+        sync: false
+      - key: AZURE_OPENAI_API_KEY
+        sync: false
+      - key: AZURE_OPENAI_API_VERSION
+        sync: false
+      - key: AZURE_OPENAI_CHAT_DEPLOYMENT
+        sync: false
+
+  - type: web
+    name: linguacall-media
+    runtime: docker
+    dockerfilePath: ./media/Dockerfile
+    dockerContext: ./media
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: CORE_API_URL
+        fromService:
+          type: web
+          name: linguacall-api
+          property: hostport
+      - key: MEDIA_SERVICE_TOKEN
+        fromService:
+          type: web
+          name: linguacall-api
+          envVarKey: MEDIA_SERVICE_TOKEN
+
+databases:
+  - name: linguacall-db
+    plan: starter
+    postgresMajorVersion: "16"

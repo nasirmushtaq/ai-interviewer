@@ -1,0 +1,110 @@
+# Production stack: single entrypoint via Caddy (auto-HTTPS), Postgres, API,
+# media SFU, Piston executor, and the web SPA. Copy .env.prod.example -> .env.prod
+# and edit, then:  ./deploy.sh   (or docker compose --env-file .env.prod up -d --build)
+name: linguacall
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+    depends_on:
+      - web
+      - api
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Web calls the API via its public origin (through Caddy).
+        VITE_API_URL: ${PUBLIC_API_URL}
+    restart: unless-stopped
+    expose:
+      - "8080"
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      ENV: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PISTON_URL: http://piston:2000
+      REDIS_URL: redis://redis:6379/0
+      MEDIA_SERVICE_URL: ${PUBLIC_MEDIA_URL}
+    expose:
+      - "8000"
+    depends_on:
+      - db
+      - piston
+      - redis
+
+  media:
+    build: ./media
+    restart: unless-stopped
+    environment:
+      PORT: "4000"
+      CORE_API_URL: http://api:8000
+      MEDIA_SERVICE_TOKEN: ${MEDIA_SERVICE_TOKEN}
+      MEDIASOUP_ANNOUNCED_IP: ${MEDIA_ANNOUNCED_IP}
+      RTC_MIN_PORT: "40000"
+      RTC_MAX_PORT: "40100"
+    ports:
+      - "40000-40100:40000-40100/udp"
+    expose:
+      - "4000"
+    depends_on:
+      - api
+
+  piston:
+    image: ghcr.io/engineer-man/piston
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - piston-packages:/piston/packages
+    tmpfs:
+      - /tmp:exec
+    expose:
+      - "2000"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg-data:
+  piston-packages:
+  caddy-data:
+  redis-data:
+  caddy-config:

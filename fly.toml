@@ -1,0 +1,28 @@
+# Fly.io config for the API service. Deploy:
+#   fly launch --no-deploy   (creates the app)
+#   fly postgres create && fly postgres attach <db>   (sets DATABASE_URL)
+#   fly secrets set AZURE_OPENAI_API_KEY=... AZURE_OPENAI_ENDPOINT=... JWT_SECRET=...
+#   fly deploy
+app = "linguacall-api"
+primary_region = "iad"
+
+[build]
+  dockerfile = "backend/Dockerfile"
+
+[env]
+  ENV = "production"
+  # Set CORS_ORIGINS + provider vars via `fly secrets set` (see comments above).
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.checks]
+    [http_service.checks.health]
+      method = "GET"
+      path = "/api/health"
+      interval = "30s"
+      timeout = "5s"
