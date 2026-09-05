@@ -591,6 +591,7 @@ export default function Interview() {
         error={call.error}
         transcript={call.transcript}
         aiSpeaking={call.aiSpeaking}
+        userSpeaking={(call as any).userSpeaking}
         interimText={(call as any).interimText}
         onStart={beginCall}
         onStop={endAndGrade}

@@ -36,6 +36,7 @@ class OpenAIProvider(LLMProvider):
             "instructions": instructions,
             "modalities": ["audio", "text"],
             "input_audio_transcription": {"model": "whisper-1"},
+            "turn_detection": s.realtime_turn_detection(self.name),
         }
         headers = {
             "Authorization": f"Bearer {s.OPENAI_API_KEY}",
@@ -88,6 +89,7 @@ class AzureProvider(LLMProvider):
             "instructions": instructions,
             "modalities": ["audio", "text"],
             "input_audio_transcription": {"model": "whisper-1"},
+            "turn_detection": s.realtime_turn_detection(self.name),
         }
         headers = {"api-key": s.AZURE_OPENAI_API_KEY, "Content-Type": "application/json"}
         async with httpx.AsyncClient(timeout=30) as http:

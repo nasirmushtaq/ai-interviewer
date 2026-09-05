@@ -10,6 +10,7 @@ export default function CallStage({
   error,
   transcript,
   aiSpeaking,
+  userSpeaking = false,
   interimText,
   onStart,
   onStop,
@@ -25,6 +26,7 @@ export default function CallStage({
   error: string;
   transcript: Turn[];
   aiSpeaking: boolean;
+  userSpeaking?: boolean;
   interimText?: string;
   onStart: () => void;
   onStop: () => void;
@@ -62,7 +64,11 @@ export default function CallStage({
           {live && (
             <span className="text-green-400 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              {aiSpeaking ? "Speaking…" : "Listening…"}
+              {aiSpeaking
+                ? "Speaking…"
+                : userSpeaking
+                  ? "Listening — go ahead…"
+                  : "Listening…"}
             </span>
           )}
           {status === "ended" && <span className="text-gray-400">Call ended</span>}

@@ -13,6 +13,9 @@ export function useRealtimeCall() {
   const [error, setError] = useState<string>("");
   const [transcript, setTranscript] = useState<Turn[]>([]);
   const [aiSpeaking, setAiSpeaking] = useState(false);
+  // True from when server VAD detects the candidate started talking until their
+  // turn ends — drives a "listening…" cue and reflects barge-in instantly.
+  const [userSpeaking, setUserSpeaking] = useState(false);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -55,7 +58,18 @@ export function useRealtimeCall() {
         break;
       }
       case "response.done":
+      case "response.cancelled":
         setAiSpeaking(false);
+        break;
+      // Candidate started speaking. With server VAD this is also a barge-in: the
+      // server stops the AI's audio, so reflect that in the UI immediately rather
+      // than waiting for the cancelled response to wind down.
+      case "input_audio_buffer.speech_started":
+        setUserSpeaking(true);
+        setAiSpeaking(false);
+        break;
+      case "input_audio_buffer.speech_stopped":
+        setUserSpeaking(false);
         break;
       case "conversation.item.input_audio_transcription.completed": {
         if (msg.transcript && msg.transcript.trim()) pushUser(msg.transcript.trim());
@@ -138,6 +152,7 @@ export function useRealtimeCall() {
     pcRef.current?.close();
     pcRef.current = null;
     setAiSpeaking(false);
+    setUserSpeaking(false);
     setStatus("ended");
   }, []);
 
@@ -152,5 +167,5 @@ export function useRealtimeCall() {
   // uniform interface with the browser-voice hook.
   const sendText = (_text: string) => {};
 
-  return { status, error, transcript, aiSpeaking, interimText: "", start, stop, toggleMute, sendText, injectAssistant: (_t: string) => {}, cleanTranscript };
+  return { status, error, transcript, aiSpeaking, userSpeaking, interimText: "", start, stop, toggleMute, sendText, injectAssistant: (_t: string) => {}, cleanTranscript };
 }

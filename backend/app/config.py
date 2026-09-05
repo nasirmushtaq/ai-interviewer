@@ -61,6 +61,21 @@ class Settings(BaseSettings):
     OPENAI_VISION_MODEL: str = "gpt-4o"
     OPENAI_REALTIME_MODEL: str = "gpt-4o-realtime-preview"
 
+    # ----- Realtime turn detection (voice barge-in) -----
+    # How the model decides the candidate has finished a turn, and whether their
+    # speech interrupts the AI. "semantic_vad" (OpenAI only) judges turn-end by
+    # meaning — best at ignoring "um/uh" thinking pauses; "server_vad" is a
+    # silence-threshold detector that also works on Azure. When semantic_vad is
+    # requested on a provider that lacks it, we fall back to tuned server_vad.
+    REALTIME_VAD_MODE: str = "semantic_vad"  # "semantic_vad" | "server_vad"
+    # semantic_vad: how eagerly the model takes its turn ("low" waits longer, so
+    # candidates can pause to think without being cut off).
+    REALTIME_VAD_EAGERNESS: str = "medium"  # "low" | "medium" | "high" | "auto"
+    # server_vad tuning (also used as the semantic_vad fallback):
+    REALTIME_VAD_THRESHOLD: float = 0.5
+    REALTIME_VAD_PREFIX_MS: int = 300
+    REALTIME_VAD_SILENCE_MS: int = 700
+
     # ----- App environment / server -----
     ENV: str = "development"  # "development" | "production"
     LOG_LEVEL: str = "INFO"
@@ -186,6 +201,24 @@ class Settings(BaseSettings):
         from .providers import resolve_vision
 
         return resolve_vision(self).name
+
+    def realtime_turn_detection(self, provider_name: str) -> dict:
+        """Build the Realtime API ``turn_detection`` config for a provider.
+
+        semantic_vad is OpenAI-only; any other provider (e.g. Azure) transparently
+        falls back to tuned server_vad. Both are configured to let the candidate's
+        speech interrupt the AI (barge-in) and to auto-respond at turn end.
+        """
+        common = {"create_response": True, "interrupt_response": True}
+        if self.REALTIME_VAD_MODE == "semantic_vad" and provider_name == "openai":
+            return {"type": "semantic_vad", "eagerness": self.REALTIME_VAD_EAGERNESS, **common}
+        return {
+            "type": "server_vad",
+            "threshold": self.REALTIME_VAD_THRESHOLD,
+            "prefix_padding_ms": self.REALTIME_VAD_PREFIX_MS,
+            "silence_duration_ms": self.REALTIME_VAD_SILENCE_MS,
+            **common,
+        }
 
     @property
     def is_custom(self) -> bool:

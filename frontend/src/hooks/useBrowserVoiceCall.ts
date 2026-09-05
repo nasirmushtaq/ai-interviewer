@@ -382,6 +382,9 @@ export function useBrowserVoiceCall() {
     error,
     transcript,
     aiSpeaking,
+    // Parity with the realtime hook: the browser engine is "hearing" the
+    // candidate whenever it has interim speech-recognition text.
+    userSpeaking: interimText.length > 0,
     interimText,
     start,
     stop,
