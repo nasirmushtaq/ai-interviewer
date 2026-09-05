@@ -6,6 +6,7 @@ sampled frames here for GPT-4o vision analysis. Observations are persisted and
 also fanned out live over a WebSocket so the client can display "the interviewer
 noticed X" and, if desired, nudge the realtime agent.
 """
+
 import asyncio
 import uuid
 from datetime import datetime
@@ -13,8 +14,8 @@ from datetime import datetime
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     Header,
+    HTTPException,
     Request,
     WebSocket,
     WebSocketDisconnect,
@@ -22,23 +23,14 @@ from fastapi import (
 from pydantic import BaseModel
 from sqlalchemy.orm import Session as DbSession
 
+from . import auth, catalog, entitlement, execution, problems, pubsub, services, vision_service
+from . import db as database
 from .config import settings
 from .ratelimit import limiter
-from . import db as database
-from . import vision_service
-from . import services
-from . import catalog
-from . import execution
-from . import problems
-from . import auth
-from . import entitlement
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
-
-# ---------- live observation pub/sub (Redis-backed, in-memory fallback) ----------
-from . import pubsub
-
+# Live observation pub/sub (Redis-backed, in-memory fallback).
 hub = pubsub.get_pubsub()
 
 
@@ -166,8 +158,7 @@ def get_session(session_id: str, db: DbSession = Depends(database.get_db)):
         "hints_used": len(sess.hints),
         "hint_penalty": sum(h.penalty for h in sess.hints),
         "observations": [
-            {"source": o.source, "note": o.note, "flags": o.flags,
-             "at": o.created_at.isoformat()}
+            {"source": o.source, "note": o.note, "flags": o.flags, "at": o.created_at.isoformat()}
             for o in sess.observations
         ],
     }
@@ -268,7 +259,7 @@ async def observe(websocket: WebSocket, session_id: str):
             await websocket.send_json(msg)
     except WebSocketDisconnect:
         pass
-    except Exception:  # noqa: BLE001  (client gone / stream error)
+    except Exception:
         pass
 
 
@@ -302,9 +293,7 @@ def _problem_for_client(p: dict) -> dict:
 
 
 @router.post("/{session_id}/problem")
-def get_problem(
-    session_id: str, body: ProblemIn, db: DbSession = Depends(database.get_db)
-):
+def get_problem(session_id: str, body: ProblemIn, db: DbSession = Depends(database.get_db)):
     sess = db.get(database.Session, session_id)
     if not sess:
         raise HTTPException(404, "Session not found.")
@@ -336,7 +325,9 @@ def coding_languages():
 
 @router.post("/{session_id}/run")
 @limiter.limit(settings.RATE_LIMIT_EXEC)
-def run_code(request: Request, session_id: str, body: RunIn, db: DbSession = Depends(database.get_db)):
+def run_code(
+    request: Request, session_id: str, body: RunIn, db: DbSession = Depends(database.get_db)
+):
     """Run against VISIBLE example tests only; return full details."""
     sess = db.get(database.Session, session_id)
     if not sess or not sess.problem:
@@ -353,7 +344,9 @@ def run_code(request: Request, session_id: str, body: RunIn, db: DbSession = Dep
 
 @router.post("/{session_id}/submit")
 @limiter.limit(settings.RATE_LIMIT_EXEC)
-def submit_code(request: Request, session_id: str, body: SubmitIn, db: DbSession = Depends(database.get_db)):
+def submit_code(
+    request: Request, session_id: str, body: SubmitIn, db: DbSession = Depends(database.get_db)
+):
     """Run against example + hidden tests. Hidden inputs are NOT returned —
     only aggregate pass/fail so the candidate can't reverse-engineer them."""
     sess = db.get(database.Session, session_id)
@@ -370,16 +363,18 @@ def submit_code(request: Request, session_id: str, body: SubmitIn, db: DbSession
     client_results = []
     for r in result.get("results", []):
         if r.get("hidden"):
-            client_results.append({
-                "hidden": True,
-                "passed": r["passed"],
-                "status": r["status"],
-            })
+            client_results.append(
+                {
+                    "hidden": True,
+                    "passed": r["passed"],
+                    "status": r["status"],
+                }
+            )
         else:
             client_results.append(r)
 
     ex_passed = sum(1 for r in result["results"][: len(examples)] if r["passed"])
-    hid_passed = sum(1 for r in result["results"][len(examples):] if r["passed"])
+    hid_passed = sum(1 for r in result["results"][len(examples) :] if r["passed"])
     summary = {
         "results": client_results,
         "example_passed": ex_passed,
@@ -423,7 +418,8 @@ async def submit_diagram(
 
     analysis = await asyncio.to_thread(
         vision_service.analyze_architecture,
-        body.image, curr_model,
+        body.image,
+        curr_model,
         "This is the candidate's live system-design whiteboard.",
     )
     if change_text:
@@ -455,14 +451,19 @@ async def submit_diagram(
     note = analysis.get("summary", "")
     if analysis.get("gaps"):
         note += " | gaps: " + "; ".join(analysis["gaps"])
-    db.add(database.Observation(
-        session_id=session_id, source="diagram",
-        note=note, flags=analysis.get("flags", []),
-    ))
+    db.add(
+        database.Observation(
+            session_id=session_id,
+            source="diagram",
+            note=note,
+            flags=analysis.get("flags", []),
+        )
+    )
     db.commit()
 
     payload = {
-        "type": "observation", "source": "diagram",
+        "type": "observation",
+        "source": "diagram",
         "note": analysis.get("summary", ""),
         "gaps": analysis.get("gaps", []),
         "change": change_text,

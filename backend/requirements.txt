@@ -9,7 +9,6 @@ httpx==0.28.1
 openai==1.57.4
 # Production: Postgres driver + migrations
 psycopg[binary]==3.2.4
-alembic==1.14.0
 # Auth: password hashing + JWT
 passlib[bcrypt]==1.7.4
 bcrypt==4.2.1

@@ -1,5 +1,6 @@
 """Resume parsing (PDF/DOCX/text) + an AI-extracted profile summary used to
 tailor interview questions to the candidate's real experience."""
+
 import io
 
 from . import openai_service as ai
@@ -14,7 +15,7 @@ def extract_text(filename: str, data: bytes) -> str:
     # Fallback: treat as plain text.
     try:
         return data.decode("utf-8", errors="ignore")
-    except Exception:  # noqa: BLE001
+    except Exception:
         return ""
 
 
@@ -26,7 +27,7 @@ def _from_pdf(data: bytes) -> str:
     for page in reader.pages:
         try:
             parts.append(page.extract_text() or "")
-        except Exception:  # noqa: BLE001
+        except Exception:
             continue
     return "\n".join(parts).strip()
 
@@ -59,7 +60,7 @@ def summarize(resume_text: str) -> str:
                 {"role": "user", "content": resume_text[:8000]},
             ]
         ).strip()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return f"(summary failed: {e})"
 
 

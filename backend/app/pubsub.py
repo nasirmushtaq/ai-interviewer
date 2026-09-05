@@ -9,11 +9,12 @@ Consumers call `subscribe(session_id)` to get an async iterator of messages and
 `publish(session_id, message)` to fan out. The interface is identical for both
 backends, so call sites don't change.
 """
+
 import asyncio
 import json
 import logging
 from collections import defaultdict
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from .config import settings
 
@@ -71,7 +72,7 @@ class _RedisPubSub:
             try:
                 await pubsub.unsubscribe(_CHANNEL_PREFIX + session_id)
                 await pubsub.close()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
 
@@ -85,7 +86,7 @@ def get_pubsub():
             try:
                 _backend = _RedisPubSub(settings.REDIS_URL)
                 log.info("pubsub: using Redis at %s", settings.REDIS_URL.split("@")[-1])
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 log.warning("pubsub: Redis init failed (%s); falling back to in-memory", e)
                 _backend = _InMemoryPubSub()
         else:

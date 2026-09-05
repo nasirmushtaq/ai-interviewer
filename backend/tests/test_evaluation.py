@@ -1,16 +1,25 @@
 """Tests for the system-design evaluation: the full rubric with teaching
 ('how a strong candidate reasons') and the 14 scoring dimensions."""
+
 from conftest import requires_llm
 
 from app import services
 
-
 DESIGN_DIMENSIONS = {
-    "requirements", "estimation", "api_data_model", "high_level_architecture",
-    "data_flow", "storage_consistency", "caching_performance",
-    "availability_fault_tolerance", "scalability_partitioning",
-    "concurrency_distributed", "security_reliability", "operations",
-    "tradeoffs", "communication",
+    "requirements",
+    "estimation",
+    "api_data_model",
+    "high_level_architecture",
+    "data_flow",
+    "storage_consistency",
+    "caching_performance",
+    "availability_fault_tolerance",
+    "scalability_partitioning",
+    "concurrency_distributed",
+    "security_reliability",
+    "operations",
+    "tradeoffs",
+    "communication",
 }
 
 
@@ -18,12 +27,19 @@ DESIGN_DIMENSIONS = {
 def test_design_evaluation_has_full_rubric_and_teaching():
     transcript = [
         {"role": "assistant", "text": "Design a URL shortener for millions of users."},
-        {"role": "user", "text": "Client -> gateway -> a service storing short->long in Postgres. I added a Redis cache. Millions of users."},
+        {
+            "role": "user",
+            "text": "Client -> gateway -> a service storing short->long in Postgres. I added a Redis cache. Millions of users.",
+        },
         {"role": "assistant", "text": "How do you generate unique short codes across servers?"},
         {"role": "user", "text": "Um, random strings and check the DB."},
     ]
     report = services.grade_interview(
-        "SDE", "system_design", "hard", transcript, track="sde",
+        "SDE",
+        "system_design",
+        "hard",
+        transcript,
+        track="sde",
     )
     # 14 design dimensions scored
     scored = set(report.get("scores", {}).keys())
@@ -50,7 +66,11 @@ def test_coding_evaluation_uses_simple_rubric_not_design():
         {"role": "user", "text": "Iterate with prev/cur/next pointers, O(n)/O(1)."},
     ]
     report = services.grade_interview(
-        "SDE", "dsa", "medium", transcript, track="sde",
+        "SDE",
+        "dsa",
+        "medium",
+        transcript,
+        track="sde",
     )
     scored = set(report.get("scores", {}).keys())
     # coding uses the classic 4-dimension rubric

@@ -1,6 +1,7 @@
 """Progress analytics computed from a user's interview reports:
 score trends over time, per-dimension averages + weak areas, and streaks.
 """
+
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -62,7 +63,7 @@ def compute_stats(db: Session, user_id: int) -> dict:
     # recent improvement: avg of last 3 vs first 3
     if len(scores) >= 2:
         head = scores[: min(3, len(scores) // 2 or 1)]
-        tail = scores[-min(3, len(scores) // 2 or 1):]
+        tail = scores[-min(3, len(scores) // 2 or 1) :]
         recent_improvement = round(sum(tail) / len(tail) - sum(head) / len(head))
     else:
         recent_improvement = 0
@@ -73,21 +74,23 @@ def compute_stats(db: Session, user_id: int) -> dict:
         s = r.scores or {}
         for d in DIMENSIONS:
             v = s.get(d)
-            if isinstance(v, (int, float)):
+            if isinstance(v, int | float):
                 dim_totals[d].append(int(v))
     dimensions = []
     for d in DIMENSIONS:
         vals = dim_totals[d]
         if vals:
-            dimensions.append({
-                "id": d,
-                "label": DIM_LABELS[d],
-                "average": round(sum(vals) / len(vals)),
-                "count": len(vals),
-            })
+            dimensions.append(
+                {
+                    "id": d,
+                    "label": DIM_LABELS[d],
+                    "average": round(sum(vals) / len(vals)),
+                    "count": len(vals),
+                }
+            )
     ranked = sorted(dimensions, key=lambda x: x["average"])
-    weak_areas = [d for d in ranked[:2]] if ranked else []
-    strong_areas = [d for d in ranked[-2:][::-1]] if ranked else []
+    weak_areas = list(ranked[:2]) if ranked else []
+    strong_areas = list(ranked[-2:][::-1]) if ranked else []
 
     # ---- per-track breakdown ----
     track_map: dict[str, list[int]] = {}

@@ -1,17 +1,17 @@
 """Billing endpoints: pricing, order creation, provider webhooks (source of
 truth for granting credits), and the current user's entitlement."""
+
 import logging
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Header
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session as DbSession
 
-from .config import settings
+from . import auth, billing
 from . import db as database
-from . import billing
 from . import entitlement as ent
-from . import auth
+from .config import settings
 
 log = logging.getLogger("linguacall.billing")
 router = APIRouter(prefix="/api/billing", tags=["billing"])
@@ -33,9 +33,7 @@ def plans():
             "razorpay": billing.provider_configured("razorpay"),
             "cashfree": billing.provider_configured("cashfree"),
         },
-        "dev_payments_enabled": (
-            settings.DEV_ALLOW_TEST_PAYMENTS and not settings.is_production
-        ),
+        "dev_payments_enabled": (settings.DEV_ALLOW_TEST_PAYMENTS and not settings.is_production),
     }
 
 
@@ -66,7 +64,7 @@ def create_order(
         )
     try:
         order = billing.create_order(provider, pack, user.id)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.exception("order creation failed")
         raise HTTPException(502, f"Could not create payment order: {e}")
 
@@ -89,9 +87,7 @@ def create_order(
 def _fulfill(db: DbSession, provider: str, order_id: str, payment_id: str | None):
     """Mark the order paid and grant credits — idempotently."""
     row = (
-        db.query(database.Purchase)
-        .filter_by(provider=provider, provider_order_id=order_id)
-        .first()
+        db.query(database.Purchase).filter_by(provider=provider, provider_order_id=order_id).first()
     )
     if not row:
         log.warning("webhook for unknown order %s (%s)", order_id, provider)
@@ -173,12 +169,23 @@ def dev_grant(
     # Record a 'paid' purchase for auditability, then grant via the same path
     # the real webhook uses.
     row = database.Purchase(
-        user_id=user.id, provider="dev", provider_order_id=f"dev-{datetime.utcnow().timestamp()}",
-        pack_id=pack_name, credits=credits, amount=0, currency=settings.BILLING_CURRENCY,
-        status="paid", provider_payment_id="dev-test", paid_at=datetime.utcnow(),
+        user_id=user.id,
+        provider="dev",
+        provider_order_id=f"dev-{datetime.utcnow().timestamp()}",
+        pack_id=pack_name,
+        credits=credits,
+        amount=0,
+        currency=settings.BILLING_CURRENCY,
+        status="paid",
+        provider_payment_id="dev-test",
+        paid_at=datetime.utcnow(),
     )
     db.add(row)
     db.commit()
     ent.grant_credits(db, user.id, credits)
     log.info("[dev-grant] granted %s credits to user %s (TEST MODE)", credits, user.id)
-    return {"ok": True, "granted": credits, "entitlement": ent.entitlement(db.get(database.User, user.id))}
+    return {
+        "ok": True,
+        "granted": credits,
+        "entitlement": ent.entitlement(db.get(database.User, user.id)),
+    }

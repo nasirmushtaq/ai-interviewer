@@ -1,13 +1,13 @@
 from datetime import datetime
 
 from sqlalchemy import (
-    create_engine,
-    String,
-    Integer,
-    Text,
+    JSON,
     DateTime,
     ForeignKey,
-    JSON,
+    Integer,
+    String,
+    Text,
+    create_engine,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -24,9 +24,9 @@ def _normalized_db_url(url: str) -> str:
     """PaaS providers often hand out `postgres://...`; SQLAlchemy 2 + psycopg3
     wants `postgresql+psycopg://...`. Normalize so any of these 'just work'."""
     if url.startswith("postgres://"):
-        url = "postgresql+psycopg://" + url[len("postgres://"):]
+        url = "postgresql+psycopg://" + url[len("postgres://") :]
     elif url.startswith("postgresql://") and "+psycopg" not in url:
-        url = "postgresql+psycopg://" + url[len("postgresql://"):]
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
     return url
 
 
@@ -176,9 +176,7 @@ class Observation(Base):
 
     __tablename__ = "observations"
     id: Mapped[int] = mapped_column(primary_key=True)
-    session_id: Mapped[str] = mapped_column(
-        ForeignKey("sessions.id"), index=True
-    )
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.id"), index=True)
     source: Mapped[str] = mapped_column(String(20))  # "camera" | "screen"
     note: Mapped[str] = mapped_column(Text)  # what the AI saw
     flags: Mapped[list] = mapped_column(JSON, default=list)  # e.g. ["looking_away"]

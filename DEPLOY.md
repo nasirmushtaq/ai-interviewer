@@ -30,8 +30,8 @@ cp .env.prod.example .env.prod      # fill in domains, DB password, JWT_SECRET,
 ```
 
 - Caddy issues Let's Encrypt certs for `APP_DOMAIN` and `API_DOMAIN` automatically.
-- The **api** container runs `alembic upgrade head` on start (see
-  `backend/docker-entrypoint.sh`), so the schema is always migrated.
+- The **api** container creates any missing tables from the SQLAlchemy models on
+  startup (see `app/lifespan.py`), so the schema is always present.
 - `./deploy.sh logs` / `./deploy.sh down` / `./deploy.sh ps` for ops.
 
 Local test without real domains: set `APP_DOMAIN=:80` and `API_DOMAIN=:80` and
@@ -57,8 +57,8 @@ Local test without real domains: set `APP_DOMAIN=:80` and `API_DOMAIN=:80` and
 
 ### Database
 Any managed Postgres works. Set `DATABASE_URL`; the app normalizes
-`postgres://` / `postgresql://` to the psycopg driver automatically. Run
-migrations once (the Docker entrypoint does this, or `alembic upgrade head`).
+`postgres://` / `postgresql://` to the psycopg driver automatically. The tables
+are created from the models automatically on first startup — no migration step.
 
 ### Code execution (Piston)
 Run Piston as its own container/host and set `PISTON_URL`, or point at a Piston
@@ -71,7 +71,7 @@ for production.)
 
 | Var | Purpose |
 |---|---|
-| `ENV` | `production` in prod (disables SQLite auto-create; expects migrations) |
+| `ENV` | `production` in prod (enforces startup security guards) |
 | `DATABASE_URL` | Postgres URL in prod (SQLite default in dev) |
 | `CORS_ORIGINS` | comma-separated web origins (e.g. `https://app.example.com`) |
 | `JWT_SECRET` | long random string for signing auth tokens |
@@ -90,7 +90,7 @@ The provider is **auto-detected** from whichever credentials are present (see
 - [ ] `.env.prod` filled; secrets NOT committed (they're gitignored)
 - [ ] `JWT_SECRET` set to a strong random value; `REQUIRE_AUTH=true` if desired
 - [ ] `CORS_ORIGINS` set to your real web origin(s)
-- [ ] `DATABASE_URL` → managed Postgres; migrations applied
+- [ ] `DATABASE_URL` → managed Postgres (tables auto-created from models on startup)
 - [ ] Provider keys set; `GET /api/health` shows the right provider
 - [ ] Piston reachable at `PISTON_URL` with Python/Java/C++ installed
 - [ ] (If using video) `MEDIA_ANNOUNCED_IP` = server public IP, UDP ports open

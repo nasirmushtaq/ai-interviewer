@@ -1,10 +1,11 @@
 """Coverage engine: keeps a live checklist of what the interview has covered,
 updating item statuses from the conversation, so the interviewer can guarantee a
 comprehensive interview (never wraps up with gaps)."""
+
 import json
 
-from . import openai_service as ai
 from . import checklists
+from . import openai_service as ai
 
 
 def ensure_coverage(session) -> dict:
@@ -31,7 +32,7 @@ _UPDATE_SYSTEM = (
     "- 'answered_weak': the candidate addressed it but poorly / superficially.\n"
     "- 'answered_strong': the candidate addressed it well.\n"
     "Be strict: only mark answered_strong when the candidate genuinely covered it "
-    "with substance. Return STRICT JSON: {\"items\": [{\"item\": str, \"status\": "
+    'with substance. Return STRICT JSON: {"items": [{"item": str, "status": '
     "str}, ...]} echoing every item with its updated status."
 )
 
@@ -41,26 +42,25 @@ def update_coverage(coverage: dict, transcript: list[dict]) -> dict:
     state if the model call fails."""
     if not ai.has_key() or not coverage.get("items"):
         return coverage
-    convo = "\n".join(
-        f"{t.get('role')}: {t.get('text','')}" for t in (transcript or [])[-16:]
-    )
+    convo = "\n".join(f"{t.get('role')}: {t.get('text','')}" for t in (transcript or [])[-16:])
     checklist_text = json.dumps(
         [{"item": i["item"], "status": i["status"]} for i in coverage["items"]]
     )
     try:
-        data = ai.chat_json([
-            {"role": "system", "content": _UPDATE_SYSTEM},
-            {"role": "user", "content":
-                f"Checklist:\n{checklist_text}\n\nConversation:\n{convo}\n\n"
-                "Return the updated items JSON."},
-        ])
-    except Exception:  # noqa: BLE001
+        data = ai.chat_json(
+            [
+                {"role": "system", "content": _UPDATE_SYSTEM},
+                {
+                    "role": "user",
+                    "content": f"Checklist:\n{checklist_text}\n\nConversation:\n{convo}\n\n"
+                    "Return the updated items JSON.",
+                },
+            ]
+        )
+    except Exception:
         return coverage
     # Merge returned statuses back by item text.
-    status_by_item = {
-        str(x.get("item")): str(x.get("status"))
-        for x in (data.get("items") or [])
-    }
+    status_by_item = {str(x.get("item")): str(x.get("status")) for x in (data.get("items") or [])}
     valid = {"not_asked", "asked", "answered_weak", "answered_strong"}
     for i in coverage["items"]:
         s = status_by_item.get(i["item"])
@@ -86,8 +86,10 @@ def coverage_prompt_block(coverage: dict) -> str:
         "mandatory items.",
     ]
     if targets:
-        lines.append("NEXT, you must drive toward these uncovered/weak items "
-                     "(pick the most natural one and ask about it specifically):")
+        lines.append(
+            "NEXT, you must drive toward these uncovered/weak items "
+            "(pick the most natural one and ask about it specifically):"
+        )
         for t in targets:
             lines.append(f"  - [{t['area']}] {t['item']} (status: {t['status']})")
     if not complete:

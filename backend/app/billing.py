@@ -8,10 +8,10 @@ Security model (bypass-proof):
   provider's secret. A forged webhook fails verification and grants nothing.
 - Entitlement (credits/free quota) is enforced server-side at session creation.
 """
+
 import hashlib
 import hmac
 import json
-import time
 import uuid
 
 import httpx
@@ -22,19 +22,32 @@ from .config import settings
 # Credit packs. amount is in paise (₹1 = 100 paise).
 # --------------------------------------------------------------------------- #
 PACKS = {
-    "starter": {"id": "starter", "name": "Starter", "credits": 3, "amount": 9900,
-                "blurb": "3 mock interviews"},
-    "pro": {"id": "pro", "name": "Pro", "credits": 10, "amount": 29900,
-            "blurb": "10 mock interviews · best value"},
-    "unlimited20": {"id": "unlimited20", "name": "Power", "credits": 25,
-                    "amount": 59900, "blurb": "25 mock interviews"},
+    "starter": {
+        "id": "starter",
+        "name": "Starter",
+        "credits": 3,
+        "amount": 9900,
+        "blurb": "3 mock interviews",
+    },
+    "pro": {
+        "id": "pro",
+        "name": "Pro",
+        "credits": 10,
+        "amount": 29900,
+        "blurb": "10 mock interviews · best value",
+    },
+    "unlimited20": {
+        "id": "unlimited20",
+        "name": "Power",
+        "credits": 25,
+        "amount": 59900,
+        "blurb": "25 mock interviews",
+    },
 }
 
 
 def list_packs() -> list[dict]:
-    return [
-        {**p, "amount_display": f"₹{p['amount'] // 100}"} for p in PACKS.values()
-    ]
+    return [{**p, "amount_display": f"₹{p['amount'] // 100}"} for p in PACKS.values()]
 
 
 def get_pack(pack_id: str) -> dict | None:
@@ -70,16 +83,16 @@ def create_order(provider: str, pack: dict, user_id: int) -> dict:
 def _razorpay_create_order(pack: dict, user_id: int) -> dict:
     import razorpay
 
-    client = razorpay.Client(
-        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-    )
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     receipt = f"u{user_id}-{uuid.uuid4().hex[:12]}"
-    order = client.order.create({
-        "amount": pack["amount"],
-        "currency": settings.BILLING_CURRENCY,
-        "receipt": receipt,
-        "notes": {"pack_id": pack["id"], "user_id": str(user_id)},
-    })
+    order = client.order.create(
+        {
+            "amount": pack["amount"],
+            "currency": settings.BILLING_CURRENCY,
+            "receipt": receipt,
+            "notes": {"pack_id": pack["id"], "user_id": str(user_id)},
+        }
+    )
     return {
         "provider": "razorpay",
         "provider_order_id": order["id"],
@@ -137,9 +150,7 @@ def verify_razorpay_webhook(body: bytes, signature: str) -> bool:
     secret = settings.RAZORPAY_WEBHOOK_SECRET
     if not secret or not signature:
         return False
-    expected = hmac.new(
-        secret.encode(), body, hashlib.sha256
-    ).hexdigest()
+    expected = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)
 
 
@@ -147,9 +158,10 @@ def verify_cashfree_webhook(body: bytes, signature: str, timestamp: str) -> bool
     secret = settings.CASHFREE_WEBHOOK_SECRET
     if not secret or not signature or not timestamp:
         return False
-    signed = (timestamp.encode() + body)
+    signed = timestamp.encode() + body
     digest = hmac.new(secret.encode(), signed, hashlib.sha256).digest()
     import base64
+
     expected = base64.b64encode(digest).decode()
     return hmac.compare_digest(expected, signature)
 
@@ -158,9 +170,7 @@ def parse_razorpay_event(body: bytes) -> dict:
     """Extract {order_id, payment_id, paid} from a Razorpay webhook body."""
     data = json.loads(body or b"{}")
     event = data.get("event", "")
-    entity = (
-        data.get("payload", {}).get("payment", {}).get("entity", {})
-    )
+    entity = data.get("payload", {}).get("payment", {}).get("entity", {})
     return {
         "order_id": entity.get("order_id"),
         "payment_id": entity.get("id"),

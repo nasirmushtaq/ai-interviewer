@@ -1,4 +1,4 @@
-# ---- Backend (FastAPI) : slim, non-root, runs migrations then serves ----
+# ---- Backend (FastAPI) : slim, non-root image ----
 FROM python:3.11-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -22,7 +22,7 @@ USER appuser
 
 EXPOSE 8000
 
-# Entrypoint: apply DB migrations (Postgres in prod), then start the server.
+# Entrypoint: start the server (schema is created from models on app startup).
 COPY --chown=appuser:appuser docker-entrypoint.sh /app/docker-entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

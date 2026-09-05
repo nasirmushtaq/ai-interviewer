@@ -42,4 +42,4 @@ echo "==> Done. Services:"
 $COMPOSE ps
 echo
 echo "App:  https://\${APP_DOMAIN}   API: https://\${API_DOMAIN}"
-echo "(DB migrations run automatically in the api container entrypoint.)"
+echo "(DB tables are created from the models automatically on API startup.)"

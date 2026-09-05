@@ -2,6 +2,7 @@
 profiles, and difficulty specs. Adding a new track or company is just adding a
 dict entry — the prompt builders read from here.
 """
+
 from __future__ import annotations
 
 # --------------------------------------------------------------------------- #
@@ -39,19 +40,19 @@ HINT_TIERS = {
     1: {
         "label": "Nudge",
         "reveal": "a small nudge that points them at the right area to think about, "
-                  "WITHOUT giving the approach or answer",
+        "WITHOUT giving the approach or answer",
         "penalty": 5,
     },
     2: {
         "label": "Approach",
         "reveal": "the high-level approach or the key idea/technique to use, but NOT "
-                  "the full solution or code",
+        "the full solution or code",
         "penalty": 12,
     },
     3: {
         "label": "Partial solution",
         "reveal": "a concrete partial solution — a key step, formula, schema sketch or "
-                  "code skeleton — while still leaving some work for the candidate",
+        "code skeleton — while still leaving some work for the candidate",
         "penalty": 22,
     },
 }
@@ -193,10 +194,18 @@ DESIGN_LADDER = DESIGN_LADDER + ADAPTIVE_DIRECTIVES
 # A few canonical design topics clients can surface as suggestions; the engine
 # also accepts any free-text topic via `candidate_note`.
 DESIGN_TOPICS = [
-    "Payment gateway", "Core banking / money transfer", "Rate limiter",
-    "URL shortener", "Ride-sharing (Uber)", "Chat / messaging system",
-    "News feed", "Distributed cache", "E-commerce checkout",
-    "Ticket booking (concurrency)", "Notification system", "File storage (Dropbox)",
+    "Payment gateway",
+    "Core banking / money transfer",
+    "Rate limiter",
+    "URL shortener",
+    "Ride-sharing (Uber)",
+    "Chat / messaging system",
+    "News feed",
+    "Distributed cache",
+    "E-commerce checkout",
+    "Ticket booking (concurrency)",
+    "Notification system",
+    "File storage (Dropbox)",
 ]
 
 
@@ -212,16 +221,16 @@ TRACKS = {
         "default_voice": "verse",
         "focuses": {
             "dsa": "Data Structures & Algorithms — arrays, strings, trees, graphs, "
-                   "DP, complexity analysis; expect the candidate to code and reason "
-                   "about time/space.",
+            "DP, complexity analysis; expect the candidate to code and reason "
+            "about time/space.",
             "system_design": "System Design — scalability, load balancing, databases, "
-                             "caching, queues, sharding, CAP trade-offs; drive toward a "
-                             "concrete architecture and trade-off discussion.",
+            "caching, queues, sharding, CAP trade-offs; drive toward a "
+            "concrete architecture and trade-off discussion.",
             "lld": "Low-Level / Object-Oriented Design — class modeling, SOLID, design "
-                   "patterns, API design for a given feature; expect clean, extensible "
-                   "designs.",
+            "patterns, API design for a given feature; expect clean, extensible "
+            "designs.",
             "behavioral": "Behavioral — past projects, ownership, conflict, impact; use "
-                          "STAR-style probing.",
+            "STAR-style probing.",
         },
     },
     "upsc": {
@@ -231,17 +240,17 @@ TRACKS = {
         "default_voice": "sage",
         "focuses": {
             "personality": "Personality Test (the UPSC 'interview') — assess clarity of "
-                           "thought, balance, integrity, awareness of national/international "
-                           "affairs, and decision-making. Ask situational and opinion "
-                           "questions; probe reasoning, not rote facts.",
+            "thought, balance, integrity, awareness of national/international "
+            "affairs, and decision-making. Ask situational and opinion "
+            "questions; probe reasoning, not rote facts.",
             "current_affairs": "Current Affairs & Polity — governance, constitution, "
-                               "recent policy, economy and international relations; probe "
-                               "understanding and balanced viewpoints.",
+            "recent policy, economy and international relations; probe "
+            "understanding and balanced viewpoints.",
             "optional_subject": "Optional Subject deep-dive — ask conceptual questions in "
-                                "the candidate's stated optional subject and follow up on "
-                                "reasoning.",
+            "the candidate's stated optional subject and follow up on "
+            "reasoning.",
             "situational": "Situational / Ethics (GS-IV style) — pose administrative "
-                          "dilemmas; evaluate ethical reasoning and practicality.",
+            "dilemmas; evaluate ethical reasoning and practicality.",
         },
     },
     "pm": {
@@ -251,13 +260,13 @@ TRACKS = {
         "default_voice": "shimmer",
         "focuses": {
             "product_sense": "Product Sense / Design — 'design/improve X' questions; "
-                            "evaluate user empathy, structure, prioritization, metrics.",
+            "evaluate user empathy, structure, prioritization, metrics.",
             "execution": "Execution / Analytics — metrics, root-cause, tradeoff and "
-                        "goal-setting questions; evaluate structured thinking.",
+            "goal-setting questions; evaluate structured thinking.",
             "estimation": "Estimation / Guesstimate — market sizing; evaluate assumptions "
-                         "and structured breakdown.",
+            "and structured breakdown.",
             "behavioral": "Behavioral / Leadership — stakeholder management, influence, "
-                         "conflict; STAR-style probing.",
+            "conflict; STAR-style probing.",
         },
     },
     "data_science": {
@@ -267,13 +276,13 @@ TRACKS = {
         "default_voice": "ash",
         "focuses": {
             "ml_concepts": "ML & Modeling — bias/variance, regularization, model "
-                          "selection, evaluation metrics, common algorithms; probe depth.",
+            "selection, evaluation metrics, common algorithms; probe depth.",
             "statistics": "Statistics & Probability — hypothesis testing, distributions, "
-                         "A/B testing, inference.",
+            "A/B testing, inference.",
             "sql_coding": "SQL & Coding — data manipulation, window functions, and "
-                         "Python/pandas problem solving.",
+            "Python/pandas problem solving.",
             "case_study": "ML Case Study — frame a business problem as an ML problem: "
-                         "data, features, model, metrics, deployment trade-offs.",
+            "data, features, model, metrics, deployment trade-offs.",
         },
     },
     "data_analyst": {
@@ -284,9 +293,9 @@ TRACKS = {
         "focuses": {
             "sql": "SQL — joins, aggregations, window functions, query optimization.",
             "analytics_case": "Analytics Case — metric definition, funnel/retention "
-                             "analysis, diagnosing a metric drop.",
+            "analysis, diagnosing a metric drop.",
             "excel_viz": "Spreadsheets & Visualization — data cleaning, pivots, choosing "
-                        "the right chart and narrative.",
+            "the right chart and narrative.",
             "product_metrics": "Product Metrics — defining KPIs and interpreting results.",
         },
     },
@@ -297,10 +306,9 @@ TRACKS = {
         "default_voice": "verse",
         "focuses": {
             "quant": "Quantitative Aptitude — arithmetic, ratios, probability, number "
-                    "theory; ask the candidate to reason out loud.",
+            "theory; ask the candidate to reason out loud.",
             "logical": "Logical Reasoning — puzzles, sequences, syllogisms.",
-            "verbal": "Verbal Ability — reading comprehension, grammar, vocabulary in "
-                     "context.",
+            "verbal": "Verbal Ability — reading comprehension, grammar, vocabulary in " "context.",
             "data_interpretation": "Data Interpretation — read tables/charts and compute.",
         },
     },
@@ -311,8 +319,8 @@ TRACKS = {
         "default_voice": "verse",
         "focuses": {
             "general": "A custom interview. Adapt entirely to the role/topic the "
-                      "candidate specifies, asking realistic questions a real interviewer "
-                      "for that role would ask.",
+            "candidate specifies, asking realistic questions a real interviewer "
+            "for that role would ask.",
         },
     },
 }
@@ -324,45 +332,53 @@ TRACKS = {
 # --------------------------------------------------------------------------- #
 COMPANIES = {
     "google": {
-        "id": "google", "name": "Google",
+        "id": "google",
+        "name": "Google",
         "style": "Emphasize algorithmic rigor, clean coding, and Googleyness. Expect "
-                 "strong problem decomposition, optimal complexity, and clear "
-                 "communication. Neutral, analytical tone.",
+        "strong problem decomposition, optimal complexity, and clear "
+        "communication. Neutral, analytical tone.",
     },
     "amazon": {
-        "id": "amazon", "name": "Amazon",
+        "id": "amazon",
+        "name": "Amazon",
         "style": "Weave in Amazon Leadership Principles (Customer Obsession, Ownership, "
-                 "Bias for Action, Dive Deep). Behavioral answers should be STAR-based; "
-                 "probe for data and personal ownership.",
+        "Bias for Action, Dive Deep). Behavioral answers should be STAR-based; "
+        "probe for data and personal ownership.",
     },
     "meta": {
-        "id": "meta", "name": "Meta",
+        "id": "meta",
+        "name": "Meta",
         "style": "Fast-paced, impact-oriented. Expect speed and correctness on coding, "
-                 "product thinking, and 'move fast' pragmatism.",
+        "product thinking, and 'move fast' pragmatism.",
     },
     "microsoft": {
-        "id": "microsoft", "name": "Microsoft",
+        "id": "microsoft",
+        "name": "Microsoft",
         "style": "Collaborative and thoughtful. Balance problem-solving with clarity, "
-                 "growth mindset, and real-world design trade-offs.",
+        "growth mindset, and real-world design trade-offs.",
     },
     "apple": {
-        "id": "apple", "name": "Apple",
+        "id": "apple",
+        "name": "Apple",
         "style": "High bar on detail, quality and user experience. Probe depth and "
-                 "craftsmanship; expect precise answers.",
+        "craftsmanship; expect precise answers.",
     },
     "startup": {
-        "id": "startup", "name": "Early-stage Startup",
+        "id": "startup",
+        "name": "Early-stage Startup",
         "style": "Scrappy and pragmatic. Value breadth, ownership, shipping quickly, and "
-                 "reasoning under ambiguity over textbook perfection.",
+        "reasoning under ambiguity over textbook perfection.",
     },
     "upsc_board": {
-        "id": "upsc_board", "name": "UPSC Board",
+        "id": "upsc_board",
+        "name": "UPSC Board",
         "style": "A formal UPSC personality-test board: courteous but probing members who "
-                 "test balance, integrity, awareness and composure. No trick questions; "
-                 "assess the whole personality and reasoning.",
+        "test balance, integrity, awareness and composure. No trick questions; "
+        "assess the whole personality and reasoning.",
     },
     "_generic": {
-        "id": "_generic", "name": "Standard",
+        "id": "_generic",
+        "name": "Standard",
         "style": "A professional, fair interviewer with a realistic industry hiring bar.",
     },
 }
@@ -374,20 +390,19 @@ COMPANIES = {
 def list_tracks() -> list[dict]:
     out = []
     for t in TRACKS.values():
-        out.append({
-            "id": t["id"],
-            "name": t["name"],
-            "emoji": t["emoji"],
-            "focuses": [{"id": k, "brief": v} for k, v in t["focuses"].items()],
-        })
+        out.append(
+            {
+                "id": t["id"],
+                "name": t["name"],
+                "emoji": t["emoji"],
+                "focuses": [{"id": k, "brief": v} for k, v in t["focuses"].items()],
+            }
+        )
     return out
 
 
 def list_companies() -> list[dict]:
-    return [
-        {"id": c["id"], "name": c["name"]}
-        for c in COMPANIES.values() if c["id"] != "_generic"
-    ]
+    return [{"id": c["id"], "name": c["name"]} for c in COMPANIES.values() if c["id"] != "_generic"]
 
 
 def resolve_track(track_id: str | None) -> dict:
@@ -414,8 +429,10 @@ def resolve_company(company_id: str | None, company_name: str | None) -> dict:
         base = {
             "id": "custom",
             "name": company_name,
-            "style": (f"Emulate the known interview style and bar of {company_name}. "
-                      + COMPANIES["_generic"]["style"]),
+            "style": (
+                f"Emulate the known interview style and bar of {company_name}. "
+                + COMPANIES["_generic"]["style"]
+            ),
         }
         return base
     return COMPANIES["_generic"]

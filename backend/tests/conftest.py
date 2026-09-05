@@ -8,6 +8,7 @@ LLM output varies, so we assert on concepts (keyword/semantic coverage across a
 short simulated conversation), not exact strings. Tests are skipped when no LLM
 key is configured, so the suite still passes in CI without credentials.
 """
+
 import os
 import sys
 
@@ -16,9 +17,8 @@ import pytest
 # Make `app` importable when running pytest from the backend dir.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import openai_service as ai  # noqa: E402
-from app import personas as p  # noqa: E402
-
+from app import openai_service as ai
+from app import personas as p
 
 requires_llm = pytest.mark.skipif(
     not ai.has_key(), reason="No LLM key configured; skipping live-model tests."
@@ -33,8 +33,14 @@ class Interviewer:
     interviewer side for concept-coverage assertions.
     """
 
-    def __init__(self, focus="system_design", difficulty="hard", track="sde",
-                 company_id=None, seed_history=None):
+    def __init__(
+        self,
+        focus="system_design",
+        difficulty="hard",
+        track="sde",
+        company_id=None,
+        seed_history=None,
+    ):
         self.system = p.build_interview_instructions(
             "SDE", focus, difficulty, track=track, company_id=company_id
         )
@@ -55,9 +61,7 @@ class Interviewer:
 
     def interviewer_text(self) -> str:
         """All interviewer turns concatenated (lowercased) for coverage checks."""
-        return "\n".join(
-            t["text"] for t in self.history if t["role"] == "assistant"
-        ).lower()
+        return "\n".join(t["text"] for t in self.history if t["role"] == "assistant").lower()
 
 
 def covers_any(text: str, keywords: list[str]) -> bool:

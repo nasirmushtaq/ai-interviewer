@@ -1,9 +1,8 @@
 """Post-call processing: summarize a transcript and extract durable memories,
 and grade interviews."""
-import json
 
-from . import openai_service as ai
 from . import catalog
+from . import openai_service as ai
 
 
 def _transcript_text(transcript: list[dict]) -> str:
@@ -38,7 +37,7 @@ def summarize_and_extract(transcript: list[dict]) -> dict:
     ]
     try:
         data = ai.chat_json(messages)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {"summary": f"(summary failed: {e})", "memories": []}
     mems = data.get("memories") or []
     mems = [str(m).strip() for m in mems if str(m).strip()]
@@ -85,8 +84,13 @@ DESIGN_GRADING_SYSTEM = (
 
 
 def generate_hint(
-    tier: int, reveal: str, question_context: str, transcript: list[dict],
-    role: str, focus: str, track: str | None = None,
+    tier: int,
+    reveal: str,
+    question_context: str,
+    transcript: list[dict],
+    role: str,
+    focus: str,
+    track: str | None = None,
 ) -> str:
     """Produce a single tiered hint for the candidate's current question."""
     if not ai.has_key():
@@ -110,7 +114,7 @@ def generate_hint(
             [{"role": "system", "content": system}, {"role": "user", "content": user}],
             temperature=0.5,
         ).strip()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return f"(hint failed: {e})"
 
 
@@ -136,7 +140,9 @@ def grade_interview(
             "hints_used": len(hints or []),
             "hint_penalty": sum(h.get("penalty", 0) for h in (hints or [])),
         }
-    trk = catalog.resolve_track(track or ("sde" if focus in catalog.TRACKS["sde"]["focuses"] else "generic"))
+    trk = catalog.resolve_track(
+        track or ("sde" if focus in catalog.TRACKS["sde"]["focuses"] else "generic")
+    )
     _, focus_brief = catalog.resolve_focus(trk, focus)
     company = catalog.resolve_company(company_id, company_name)
     diff = catalog.resolve_difficulty(difficulty)
@@ -186,7 +192,7 @@ def grade_interview(
     ]
     try:
         data = ai.chat_json(messages)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {
             "overall_score": 0,
             "scores": {},
@@ -228,12 +234,18 @@ COACHING_SYSTEM = (
 
 
 def generate_coaching(
-    role: str, focus: str, difficulty: str, transcript: list[dict],
-    report: dict | None = None, track: str | None = None,
+    role: str,
+    focus: str,
+    difficulty: str,
+    transcript: list[dict],
+    report: dict | None = None,
+    track: str | None = None,
 ) -> dict:
     if not ai.has_key():
         return {
-            "model_answers": [], "key_concepts": [], "next_drill": None,
+            "model_answers": [],
+            "key_concepts": [],
+            "next_drill": None,
             "action_plan": ["Add an OpenAI API key to enable coaching."],
         }
     convo = _transcript_text(transcript)
@@ -256,9 +268,11 @@ def generate_coaching(
     ]
     try:
         data = ai.chat_json(messages)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {
-            "model_answers": [], "key_concepts": [], "next_drill": None,
+            "model_answers": [],
+            "key_concepts": [],
+            "next_drill": None,
             "action_plan": [f"Coaching failed: {e}"],
         }
     return {

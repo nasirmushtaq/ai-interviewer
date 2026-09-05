@@ -1,7 +1,6 @@
 """Coding problems: a small seeded bank (hybrid) plus AI generation. Each problem
 has a statement, per-language starter code, visible example tests, and hidden
 tests. Tests use stdin -> stdout so they run uniformly across languages."""
-import json
 
 from . import openai_service as ai
 
@@ -45,7 +44,7 @@ SEED_PROBLEMS = {
         ),
         "starter": {
             "python": "import sys\nline=sys.stdin.readline().rstrip('\\n')\n# TODO: print reversed words\n",
-            "java": "import java.util.*;\npublic class Main{public static void main(String[] a){\n  Scanner sc=new Scanner(System.in);\n  String line=sc.hasNextLine()?sc.nextLine():\"\";\n  // TODO\n}}\n",
+            "java": 'import java.util.*;\npublic class Main{public static void main(String[] a){\n  Scanner sc=new Scanner(System.in);\n  String line=sc.hasNextLine()?sc.nextLine():"";\n  // TODO\n}}\n',
             "cpp": "#include <bits/stdc++.h>\nusing namespace std;\nint main(){string line; getline(cin,line); /* TODO */}\n",
         },
         "examples": [
@@ -87,8 +86,9 @@ GEN_SYSTEM = (
 )
 
 
-def generate_problem(difficulty: str, focus: str, company: str | None = None,
-                     topic: str | None = None) -> dict | None:
+def generate_problem(
+    difficulty: str, focus: str, company: str | None = None, topic: str | None = None
+) -> dict | None:
     if not ai.has_key():
         return None
     ask = (
@@ -99,10 +99,9 @@ def generate_problem(difficulty: str, focus: str, company: str | None = None,
     )
     try:
         data = ai.chat_json(
-            [{"role": "system", "content": GEN_SYSTEM},
-             {"role": "user", "content": ask}]
+            [{"role": "system", "content": GEN_SYSTEM}, {"role": "user", "content": ask}]
         )
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
     # Basic shape validation; fall back to a seed if malformed.
     if not all(k in data for k in ("title", "statement", "starter", "examples")):
@@ -120,8 +119,13 @@ def generate_problem(difficulty: str, focus: str, company: str | None = None,
     return data
 
 
-def pick_problem(difficulty: str, focus: str, company: str | None = None,
-                 topic: str | None = None, prefer_seed_id: str | None = None) -> dict:
+def pick_problem(
+    difficulty: str,
+    focus: str,
+    company: str | None = None,
+    topic: str | None = None,
+    prefer_seed_id: str | None = None,
+) -> dict:
     """Hybrid: use a specific/seed problem when asked, else try AI generation,
     else fall back to a seed."""
     if prefer_seed_id and prefer_seed_id in SEED_PROBLEMS:

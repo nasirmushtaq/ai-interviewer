@@ -1,6 +1,7 @@
 """Tests for the comprehensive-interview coverage state machine: checklists,
 status tracking, and the interviewer refusing to wrap up with gaps."""
-from conftest import requires_llm, covers_any
+
+from conftest import covers_any, requires_llm
 
 from app import checklists as c
 
@@ -38,8 +39,14 @@ def test_generic_checklist_for_unknown_system():
     cov = c.init_coverage(None)
     areas = {i["area"] for i in cov["items"]}
     # core system-design areas should all be present
-    for a in ["requirements", "estimation", "high_level_architecture",
-              "storage_consistency", "scalability_partitioning", "tradeoffs"]:
+    for a in [
+        "requirements",
+        "estimation",
+        "high_level_architecture",
+        "storage_consistency",
+        "scalability_partitioning",
+        "tradeoffs",
+    ]:
         assert a in areas, f"generic checklist missing area {a}"
 
 
@@ -48,9 +55,9 @@ def test_generic_checklist_for_unknown_system():
 def test_interviewer_refuses_early_wrap_up_when_coverage_incomplete():
     """This exercises coverage.coverage_prompt_block directly against the model:
     given an incomplete checklist, the interviewer must NOT wrap up."""
-    from app import personas as p
-    from app import openai_service as ai
     from app import coverage as cov_engine
+    from app import openai_service as ai
+    from app import personas as p
 
     cov = c.init_coverage("url_shortener")
     # candidate covered only a couple of things; most items not_asked
@@ -64,11 +71,23 @@ def test_interviewer_refuses_early_wrap_up_when_coverage_incomplete():
     ]
     reply = ai.chat(messages, temperature=0.3).lower()
     # It should keep going / say there's more to cover, and NOT conclude.
-    assert covers_any(reply, [
-        "cover", "haven't", "not done", "let's continue", "more ground",
-        "before we wrap", "keep going", "still", "requirement", "estimate",
-        "schema", "next",
-    ]), f"Interviewer wrapped up despite an incomplete checklist.\n---\n{reply}"
+    assert covers_any(
+        reply,
+        [
+            "cover",
+            "haven't",
+            "not done",
+            "let's continue",
+            "more ground",
+            "before we wrap",
+            "keep going",
+            "still",
+            "requirement",
+            "estimate",
+            "schema",
+            "next",
+        ],
+    ), f"Interviewer wrapped up despite an incomplete checklist.\n---\n{reply}"
 
 
 def test_transactional_systems_include_deep_db_concurrency():

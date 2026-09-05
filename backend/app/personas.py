@@ -1,5 +1,7 @@
 """Persona definitions and system-prompt builders."""
 
+from . import catalog
+
 PERSONAS = {
     "emma": {
         "id": "emma",
@@ -76,12 +78,8 @@ def build_persona_instructions(persona_id: str, memories: list[str]) -> str:
     return f"{p['persona']}\n\n{CONVERSATION_STYLE}{mem_block}"
 
 
-from . import catalog
-
 # Backward-compatible SDE focus map (still used by /api/interview/focuses).
-INTERVIEW_FOCUS = {
-    fid: brief for fid, brief in catalog.TRACKS["sde"]["focuses"].items()
-}
+INTERVIEW_FOCUS = dict(catalog.TRACKS["sde"]["focuses"])
 
 
 def build_interview_instructions(
@@ -105,11 +103,7 @@ def build_interview_instructions(
     role_line = role or trk["name"]
     note = f"\nThe candidate mentioned: {candidate_note}." if candidate_note else ""
 
-    design_block = (
-        f"\n\n{catalog.DESIGN_LADDER}"
-        if catalog.is_staged_design(focus_id)
-        else ""
-    )
+    design_block = f"\n\n{catalog.DESIGN_LADDER}" if catalog.is_staged_design(focus_id) else ""
 
     if hints_enabled:
         hint_block = (

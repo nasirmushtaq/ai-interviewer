@@ -4,7 +4,8 @@ Real accounts (email + password) coexist with the legacy username-only "guest"
 flow so nothing breaks. Endpoints can require auth via `current_user` when
 REQUIRE_AUTH is on, or accept an optional user via `optional_user`.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -12,8 +13,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from .config import settings
 from . import db as database
+from .config import settings
 
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _bearer = HTTPBearer(auto_error=False)
@@ -26,12 +27,12 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, password_hash: str) -> bool:
     try:
         return _pwd.verify(password, password_hash)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False
 
 
 def create_token(user: database.User) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(user.id),
         "username": user.username,
@@ -44,7 +45,7 @@ def create_token(user: database.User) -> str:
 def _decode(token: str) -> dict | None:
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALG])
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
 
 

@@ -168,8 +168,15 @@ TOPIC_CHECKLISTS = {
         },
     },
     "ticketing": {
-        "keywords": ["ticket booking", "seat booking", "reservation", "inventory",
-                     "flash sale", "e-commerce checkout", "oversell"],
+        "keywords": [
+            "ticket booking",
+            "seat booking",
+            "reservation",
+            "inventory",
+            "flash sale",
+            "e-commerce checkout",
+            "oversell",
+        ],
         "extra": {
             "transactions_concurrency": [
                 "prevent overselling the same seat/item under high concurrency",
@@ -241,10 +248,7 @@ def all_items(coverage: dict) -> list[dict]:
 
 def open_items(coverage: dict) -> list[dict]:
     """Items not yet adequately covered (not_asked or answered_weak)."""
-    return [
-        i for i in all_items(coverage)
-        if i.get("status") in ("not_asked", "answered_weak")
-    ]
+    return [i for i in all_items(coverage) if i.get("status") in ("not_asked", "answered_weak")]
 
 
 def is_complete(coverage: dict) -> bool:
@@ -256,6 +260,7 @@ def is_complete(coverage: dict) -> bool:
 def coverage_summary(coverage: dict) -> dict:
     items = all_items(coverage)
     from collections import Counter
+
     c = Counter(i.get("status", "not_asked") for i in items)
     return {
         "total": len(items),

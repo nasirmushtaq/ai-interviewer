@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -10,6 +10,24 @@ class Settings(BaseSettings):
 
     # ----- Standard OpenAI -----
     OPENAI_API_KEY: str = ""
+
+    # ----- Custom OpenAI-compatible provider (Kimi/Moonshot, DeepSeek, Together,
+    # Groq, etc.) -----
+    # Set LLM_PROVIDER=custom and fill these. Example (Kimi K2 / Moonshot):
+    #   CUSTOM_LLM_BASE_URL=https://api.moonshot.ai/v1
+    #   CUSTOM_LLM_API_KEY=sk-...
+    #   CUSTOM_LLM_CHAT_MODEL=kimi-k2-0711-preview
+    CUSTOM_LLM_BASE_URL: str = ""
+    CUSTOM_LLM_API_KEY: str = ""
+    CUSTOM_LLM_CHAT_MODEL: str = ""
+    CUSTOM_LLM_VISION_MODEL: str = ""  # blank if the provider can't read images
+
+    # ----- Vision provider override -----
+    # If the primary chat provider can't read images (e.g. Kimi K2), route ONLY
+    # vision/diagram analysis to a capable provider while everything else stays on
+    # the primary. Set VISION_PROVIDER to one of: openai | azure | github | custom.
+    # Leave blank to use the primary provider for vision too.
+    VISION_PROVIDER: str = ""
 
     # ----- GitHub Models (OpenAI-compatible; auth with a GitHub PAT) -----
     # For prototyping/testing only. Get a token at https://github.com/settings/tokens
@@ -34,7 +52,7 @@ class Settings(BaseSettings):
     AZURE_OPENAI_CHAT_DEPLOYMENT: str = "gpt-4o"
     AZURE_OPENAI_VISION_DEPLOYMENT: str = ""  # defaults to the chat deployment
     # Realtime (voice) — often a different region/resource. Leave blank to disable.
-    AZURE_OPENAI_REALTIME_ENDPOINT: str = ""   # wss://...  or https://...
+    AZURE_OPENAI_REALTIME_ENDPOINT: str = ""  # wss://...  or https://...
     AZURE_OPENAI_REALTIME_DEPLOYMENT: str = ""
     AZURE_OPENAI_REALTIME_API_VERSION: str = "2024-10-01-preview"
 
@@ -77,8 +95,9 @@ class Settings(BaseSettings):
     REQUIRE_AUTH: bool = False
 
     # ----- Rate limiting (per client IP) -----
-    RATE_LIMIT_LLM: str = "30/minute"   # chat / grade / hints
+    RATE_LIMIT_LLM: str = "30/minute"  # chat / grade / hints
     RATE_LIMIT_EXEC: str = "20/minute"  # run / submit code
+    RATE_LIMIT_AUTH: str = "10/minute"  # register / login (brute-force guard)
 
     # ----- Billing / payments -----
     # Number of free interviews a new user gets before the paywall.
@@ -149,30 +168,28 @@ class Settings(BaseSettings):
         return bool(self.GITHUB_TOKEN)
 
     @property
+    def _has_custom(self) -> bool:
+        return bool(
+            self.CUSTOM_LLM_BASE_URL and self.CUSTOM_LLM_API_KEY and self.CUSTOM_LLM_CHAT_MODEL
+        )
+
+    # --- Provider resolution delegates to the Strategy registry (single source
+    # of truth). These thin properties keep a stable surface for the rest of the
+    # app and diagnostics. ---
+    @property
     def provider(self) -> str:
-        """Plug-and-play provider resolution:
-        1. Honor an explicit, usable LLM_PROVIDER.
-        2. Otherwise pick whichever set of credentials is actually present
-           (priority: azure, then openai, then github-models)."""
-        forced = (self.LLM_PROVIDER or "").lower()
-        if forced in ("github", "github-models", "github_models"):
-            forced = "github"
-        if forced == "ollama":
-            return "ollama"  # local, no key required
-        if forced == "azure" and self._has_azure:
-            return "azure"
-        if forced == "openai" and self._has_openai:
-            return "openai"
-        if forced == "github" and self._has_github:
-            return "github"
-        # Auto-detect from whatever credentials were dropped in.
-        if self._has_azure:
-            return "azure"
-        if self._has_openai:
-            return "openai"
-        if self._has_github:
-            return "github"
-        return forced or "openai"
+        from .providers import resolve_primary
+
+        return resolve_primary(self).name
+
+    def vision_provider(self) -> str:
+        from .providers import resolve_vision
+
+        return resolve_vision(self).name
+
+    @property
+    def is_custom(self) -> bool:
+        return self.provider == "openai_compatible"
 
     @property
     def is_azure(self) -> bool:
@@ -190,9 +207,11 @@ class Settings(BaseSettings):
         """Human-readable diagnostics for the /api/health and startup log."""
         return {
             "provider": self.provider,
+            "vision_provider": self.vision_provider(),
             "openai_configured": self._has_openai,
             "azure_configured": self._has_azure,
             "github_configured": self._has_github,
+            "custom_configured": self._has_custom,
             "forced": bool(self.LLM_PROVIDER),
         }
 

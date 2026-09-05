@@ -4,10 +4,11 @@ An interview is allowed if the user has free quota remaining OR paid credits.
 `consume_interview` atomically decrements quota/credits and is called at the
 single choke point (interview session creation) so the client cannot bypass it.
 """
+
 from sqlalchemy.orm import Session
 
-from .config import settings
 from . import db as database
+from .config import settings
 
 
 def entitlement(user: database.User) -> dict:

@@ -1,6 +1,7 @@
 """Tests for the diagram intelligence: structured graph analysis, diffing, and
 the 'react only when meaningful' gating."""
-from conftest import requires_llm, covers_any
+
+from conftest import covers_any, requires_llm
 
 from app import vision_service as v
 
@@ -44,7 +45,9 @@ def test_architecture_analysis_flags_spof_and_missing_pieces():
     """A single-service-single-DB design should be read as having real gaps."""
     structure = {
         "components": [
-            {"label": "Client"}, {"label": "OrderService"}, {"label": "Postgres"},
+            {"label": "Client"},
+            {"label": "OrderService"},
+            {"label": "Postgres"},
         ],
         "edges": [
             {"from": "Client", "to": "OrderService"},
@@ -55,10 +58,20 @@ def test_architecture_analysis_flags_spof_and_missing_pieces():
     a = v.analyze_architecture("", structure, "system design whiteboard")
     gaps_text = " ".join(a.get("gaps", [])).lower()
     assert a.get("components"), "analysis returned no components"
-    assert covers_any(gaps_text, [
-        "bottleneck", "single point of failure", "spof", "replication",
-        "no cache", "caching", "scale", "no queue", "single",
-    ]), f"Analysis missed obvious gaps.\n---\n{a.get('gaps')}"
+    assert covers_any(
+        gaps_text,
+        [
+            "bottleneck",
+            "single point of failure",
+            "spof",
+            "replication",
+            "no cache",
+            "caching",
+            "scale",
+            "no queue",
+            "single",
+        ],
+    ), f"Analysis missed obvious gaps.\n---\n{a.get('gaps')}"
 
 
 @requires_llm
@@ -77,8 +90,10 @@ def test_reaction_fires_on_significant_change():
     }
     curr = {
         "components": [
-            {"label": "Client"}, {"label": "Service"},
-            {"label": "PaymentProcessor"}, {"label": "Postgres (single)"},
+            {"label": "Client"},
+            {"label": "Service"},
+            {"label": "PaymentProcessor"},
+            {"label": "Postgres (single)"},
         ],
         "edges": [
             {"from": "Client", "to": "Service"},

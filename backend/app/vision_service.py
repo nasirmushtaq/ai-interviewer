@@ -7,7 +7,6 @@ risks (SPOFs, missing failure handling, unvalidated scale, weak trade-offs) the
 interviewer should probe. We also diff successive graphs so the interviewer can
 react to specific changes the candidate makes.
 """
-import json
 
 from . import openai_service as ai
 
@@ -18,8 +17,7 @@ def diagram_to_text(model: dict | None) -> str:
         return "(empty diagram)"
     comps = ", ".join(c.get("label", "?") for c in model["components"])
     edges = "; ".join(
-        f"{e.get('from','?')} → {e.get('to','?')}"
-        + (f" [{e['label']}]" if e.get("label") else "")
+        f"{e.get('from','?')} → {e.get('to','?')}" + (f" [{e['label']}]" if e.get("label") else "")
         for e in model.get("edges", [])
     )
     loose = model.get("loose_labels") or []
@@ -53,14 +51,15 @@ ARCH_SYSTEM = (
 )
 
 
-def analyze_architecture(
-    image_data_url: str, structure: dict | None, hint: str = ""
-) -> dict:
+def analyze_architecture(image_data_url: str, structure: dict | None, hint: str = "") -> dict:
     """Structured architectural reading of the current diagram."""
     if not ai.has_key():
         return {
             "summary": "(vision unavailable — no API key)",
-            "components": [], "data_flows": [], "gaps": [], "flags": [],
+            "components": [],
+            "data_flows": [],
+            "gaps": [],
+            "flags": [],
         }
     graph_text = diagram_to_text(structure)
     user_text = (
@@ -74,18 +73,23 @@ def analyze_architecture(
     if image_data_url:
         try:
             data = ai.vision_json(ARCH_SYSTEM, user_text, [image_data_url])
-        except Exception:  # noqa: BLE001  (bad image, etc.) -> graph-only fallback
+        except Exception:
             data = None
     if data is None:
         try:
-            data = ai.chat_json([
-                {"role": "system", "content": ARCH_SYSTEM},
-                {"role": "user", "content": user_text},
-            ])
-        except Exception as e:  # noqa: BLE001
+            data = ai.chat_json(
+                [
+                    {"role": "system", "content": ARCH_SYSTEM},
+                    {"role": "user", "content": user_text},
+                ]
+            )
+        except Exception as e:
             return {
                 "summary": f"(analysis failed: {e})",
-                "components": [], "data_flows": [], "gaps": [], "flags": [],
+                "components": [],
+                "data_flows": [],
+                "gaps": [],
+                "flags": [],
             }
     return {
         "summary": str(data.get("summary", "")).strip(),
@@ -131,9 +135,15 @@ def diff_to_text(diff: dict) -> str:
 
 
 def has_changes(diff: dict) -> bool:
-    return any(diff.get(k) for k in
-               ("added_components", "removed_components",
-                "added_connections", "removed_connections"))
+    return any(
+        diff.get(k)
+        for k in (
+            "added_components",
+            "removed_components",
+            "added_connections",
+            "removed_connections",
+        )
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -152,14 +162,15 @@ _REACT_SYSTEM = (
     "important; or the change contradicts an earlier decision. Do NOT react to "
     "minor/cosmetic edits, incomplete/mid-draw changes, renames, or repositioning.\n"
     "Prefer silence: when in doubt, do not interrupt. Interrupt at most occasionally.\n"
-    "Return STRICT JSON: {\"react\": bool, \"reason\": string, \"message\": string}. "
+    'Return STRICT JSON: {"react": bool, "reason": string, "message": string}. '
     "'message' is what you'd say (one concise, specific question grounded in the "
     "actual component names) and is only used when react is true."
 )
 
 
-def decide_reaction(diff: dict, model: dict | None, analysis: dict | None,
-                    recent_transcript: str = "") -> dict:
+def decide_reaction(
+    diff: dict, model: dict | None, analysis: dict | None, recent_transcript: str = ""
+) -> dict:
     """Ask the model whether to proactively interject about a diagram change."""
     if not has_changes(diff) or not ai.has_key():
         return {"react": False, "reason": "no significant change", "message": ""}
@@ -174,11 +185,13 @@ def decide_reaction(diff: dict, model: dict | None, analysis: dict | None,
         "Should you speak up now? Return the JSON."
     )
     try:
-        data = ai.chat_json([
-            {"role": "system", "content": _REACT_SYSTEM},
-            {"role": "user", "content": user},
-        ])
-    except Exception:  # noqa: BLE001
+        data = ai.chat_json(
+            [
+                {"role": "system", "content": _REACT_SYSTEM},
+                {"role": "user", "content": user},
+            ]
+        )
+    except Exception:
         return {"react": False, "reason": "decision failed", "message": ""}
     return {
         "react": bool(data.get("react")),
@@ -206,8 +219,7 @@ def live_diagram_context(session) -> str:
         if analysis.get("gaps"):
             lines.append(
                 "Potential weaknesses to probe (verify against the diagram before "
-                "asking; pick the most important one): "
-                + " | ".join(analysis["gaps"])
+                "asking; pick the most important one): " + " | ".join(analysis["gaps"])
             )
         if analysis.get("last_change"):
             lines.append(
@@ -255,7 +267,8 @@ def latest_screen_note(observations: list[dict]) -> str:
 
 def summarize_observations(observations: list[dict]) -> str:
     notes = [
-        o for o in (observations or [])
+        o
+        for o in (observations or [])
         if o.get("source") in ("screen", "diagram") and o.get("note")
     ]
     if not notes:

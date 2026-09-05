@@ -1,11 +1,12 @@
 """Company prep packs, structured learning paths, and spaced-repetition of a
 user's weak concepts."""
-from datetime import datetime, timedelta
+
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from . import db as database
 from . import analytics
+from . import db as database
 
 # --------------------------------------------------------------------------- #
 # Company prep packs — curated interview presets per company.
@@ -71,7 +72,12 @@ LEARNING_PATHS = [
             {"title": "Warm-up DSA", "track": "sde", "focus": "dsa", "difficulty": "easy"},
             {"title": "Core DSA", "track": "sde", "focus": "dsa", "difficulty": "medium"},
             {"title": "Low-level design", "track": "sde", "focus": "lld", "difficulty": "medium"},
-            {"title": "System design basics", "track": "sde", "focus": "system_design", "difficulty": "medium"},
+            {
+                "title": "System design basics",
+                "track": "sde",
+                "focus": "system_design",
+                "difficulty": "medium",
+            },
             {"title": "Behavioral", "track": "sde", "focus": "behavioral", "difficulty": "medium"},
         ],
     },
@@ -80,10 +86,30 @@ LEARNING_PATHS = [
         "name": "Senior/Staff System Design",
         "blurb": "Go deep on hard distributed-systems design.",
         "steps": [
-            {"title": "Scaling fundamentals", "track": "sde", "focus": "system_design", "difficulty": "medium"},
-            {"title": "Hard design 1", "track": "sde", "focus": "system_design", "difficulty": "hard"},
-            {"title": "Hard design 2", "track": "sde", "focus": "system_design", "difficulty": "hard"},
-            {"title": "Leadership behavioral", "track": "sde", "focus": "behavioral", "difficulty": "hard"},
+            {
+                "title": "Scaling fundamentals",
+                "track": "sde",
+                "focus": "system_design",
+                "difficulty": "medium",
+            },
+            {
+                "title": "Hard design 1",
+                "track": "sde",
+                "focus": "system_design",
+                "difficulty": "hard",
+            },
+            {
+                "title": "Hard design 2",
+                "track": "sde",
+                "focus": "system_design",
+                "difficulty": "hard",
+            },
+            {
+                "title": "Leadership behavioral",
+                "track": "sde",
+                "focus": "behavioral",
+                "difficulty": "hard",
+            },
         ],
     },
 ]
@@ -95,11 +121,7 @@ def list_learning_paths() -> list[dict]:
 
 def path_progress(db: Session, user_id: int, path: dict) -> dict:
     """Mark each step done if the user has a report matching its track+focus."""
-    reports = (
-        db.query(database.InterviewReport)
-        .filter_by(user_id=user_id)
-        .all()
-    )
+    reports = db.query(database.InterviewReport).filter_by(user_id=user_id).all()
     done_keys = {(r.track, r.focus) for r in reports}
     steps = []
     completed = 0
@@ -138,19 +160,21 @@ def review_queue(db: Session, user_id: int) -> dict:
     due = []
     now = datetime.utcnow()
     for r in reports:
-        for imp in (r.improvements or []):
+        for imp in r.improvements or []:
             key = imp.strip().lower()
             if key in seen or not key:
                 continue
             seen.add(key)
             age_days = (now - r.created_at).days
             # simple spacing: things practiced longer ago are more "due"
-            due.append({
-                "concept": imp,
-                "from_focus": r.focus,
-                "last_seen_days": age_days,
-                "score_at_time": r.overall_score,
-            })
+            due.append(
+                {
+                    "concept": imp,
+                    "from_focus": r.focus,
+                    "last_seen_days": age_days,
+                    "score_at_time": r.overall_score,
+                }
+            )
     # sort by (older + lower score) => higher priority
     due.sort(key=lambda d: (d["score_at_time"], -d["last_seen_days"]))
     return {
