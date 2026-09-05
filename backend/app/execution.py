@@ -41,7 +41,7 @@ def list_languages() -> list[dict]:
 
 def available() -> bool:
     try:
-        r = httpx.get(f"{settings.PISTON_URL}/api/v2/runtimes", timeout=3)
+        r = httpx.get(f"{settings.piston_api_base}/runtimes", timeout=3)
         return r.status_code == 200
     except Exception:
         return False
@@ -49,7 +49,7 @@ def available() -> bool:
 
 def installed_runtimes() -> list[dict]:
     try:
-        r = httpx.get(f"{settings.PISTON_URL}/api/v2/runtimes", timeout=5)
+        r = httpx.get(f"{settings.piston_api_base}/runtimes", timeout=5)
         r.raise_for_status()
         return r.json()
     except Exception:
@@ -76,7 +76,7 @@ def _execute_one(lang_cfg: dict, version: str, source: str, stdin: str) -> dict:
         "files": [{"name": lang_cfg["file"], "content": source}],
         "stdin": stdin,
     }
-    r = httpx.post(f"{settings.PISTON_URL}/api/v2/execute", json=payload, timeout=40)
+    r = httpx.post(f"{settings.piston_api_base}/execute", json=payload, timeout=40)
     r.raise_for_status()
     return r.json()
 

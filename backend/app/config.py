@@ -139,7 +139,9 @@ class Settings(BaseSettings):
     # Where the media (mediasoup) service lives, for clients that ask.
     MEDIA_SERVICE_URL: str = "http://localhost:4000"
 
-    # Self-hosted Piston code-execution service (cgroup v2 compatible).
+    # Piston code-execution service. Point at a self-hosted instance (default,
+    # cgroup v2 compatible) OR the free public API to avoid hosting it:
+    #   PISTON_URL=https://emkc.org/api/v2/piston
     PISTON_URL: str = "http://localhost:2000"
 
     # Redis for cross-instance pub/sub (live observation streaming) and caching.
@@ -186,6 +188,18 @@ class Settings(BaseSettings):
         from .providers import resolve_vision
 
         return resolve_vision(self).name
+
+    @property
+    def piston_api_base(self) -> str:
+        """The Piston v2 API base to prefix `/runtimes` and `/execute` with.
+
+        A self-hosted Piston serves the API under `/api/v2` (e.g.
+        `http://host:2000/api/v2`), while the public instance already includes it
+        (`https://emkc.org/api/v2/piston`). Normalise both so PISTON_URL can be
+        given either way.
+        """
+        url = self.PISTON_URL.rstrip("/")
+        return url if "/api/v2" in url else f"{url}/api/v2"
 
     @property
     def is_custom(self) -> bool:
